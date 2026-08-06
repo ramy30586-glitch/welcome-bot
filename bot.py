@@ -108,23 +108,23 @@ async def on_member_join(member):
 
 
     # إرسال الترحيب
-channel = bot.get_channel(
-    int(os.getenv("CHANNEL_ID"))
-)
+    channel = bot.get_channel(
+        int(os.getenv("CHANNEL_ID"))
+    )
 
-rules = f"<#{os.getenv('RULES_CHANNEL_ID')}>"
-guide = f"<#{os.getenv('GUIDE_CHANNEL_ID')}>"
+    rules = f"<#{os.getenv('RULES_CHANNEL_ID')}>"
+    guide = f"<#{os.getenv('GUIDE_CHANNEL_ID')}>"
 
-await channel.send(
-    content=(
-        f"🎉 **مرحبًا بك {member.mention}!**\n\n"
-        f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
-        f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
-        f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
-        f"نتمنى لك وقتًا ممتعًا! 💙"
-    ),
-    file=discord.File("welcome_final.png")
-)
+    await channel.send(
+        content=(
+            f"🎉 **مرحبًا بك {member.mention}!**\n\n"
+            f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
+            f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
+            f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
+            f"نتمنى لك وقتًا ممتعًا! 💙"
+        ),
+        file=discord.File("welcome_final.png")
+    )
 
 
 # تشغيل البوت
