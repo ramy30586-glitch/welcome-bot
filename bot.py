@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"🚀 تم تشغيل البوت بالأبعاد الجديدة: {bot.user}")
+    print(f"🚀 تم تشغيل البوت وضبط إحداثيات النص: {bot.user}")
 
 @bot.event
 async def on_member_join(member):
@@ -26,14 +26,14 @@ async def on_member_join(member):
     draw = ImageDraw.Draw(img)
 
     # ----------------------------------------------------
-    # 2. صورة العضو (Avatar) - الإحداثيات الجديدة (247, 119)
+    # 2. صورة العضو (Avatar) - المكان المضبوط تمامًا
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
     avatar_size = 572
-    avatar_x = 247     # (289 - 42) تحريك لليسار
-    avatar_y = 119     # (141 - 22) تحريك للأعلى
+    avatar_x = 247
+    avatar_y = 119
 
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
@@ -47,7 +47,7 @@ async def on_member_join(member):
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
     # ----------------------------------------------------
-    # 3. اسم العضو
+    # 3. اسم العضو - الإحداثيات المعدلة (+90px لليمين, +10px للأسفل)
     # ----------------------------------------------------
     text = member.name
     font_size = 60
@@ -63,9 +63,12 @@ async def on_member_join(member):
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     
-    text_x = 90 + (700 - text_width) // 2
-    text_y = 945
+    # تحريك موقع البدء الأساسي 90 بكسل لليمين
+    base_x = 90 + 90  # 180
+    text_x = base_x + (700 - text_width) // 2
+    text_y = 955     # 945 + 10 (إنزال 10 بكسل)
 
+    # رسم الظل والنص
     draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
