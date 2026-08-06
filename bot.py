@@ -26,13 +26,14 @@ async def on_member_join(member):
     img = Image.open("welcome.png").convert("RGBA")
 
     # ----------------------------------------------------
-    # 2. تجهيز وتأطير صورة العضو (Avatar)
+    # 2. إعداد وصنع صورة العضو الدائرية
     # ----------------------------------------------------
+    # تحميل صورة العضو الشخصية
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # الحجم الدقيق للدائرة البيضاء
-    avatar_size = 350
+    # القطر المناسب للدائرة البيضاء في التصميم
+    avatar_size = 280
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
     # إنشاء قناع دائري (Mask)
@@ -40,23 +41,23 @@ async def on_member_join(member):
     mask_draw = ImageDraw.Draw(mask)
     mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
-    # جعل الصورة دائرية
+    # قص الصورة بشكل دائري
     avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
     avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    # المكان المناسب بالبيكسل داخل الدائرة البيضاء
-    avatar_x = 94
-    avatar_y = 51
+    # الإحداثيات الصحيحة لمركز الدائرة البيضاء
+    avatar_x = 260
+    avatar_y = 70
 
-    # وضع الصورة على خلفية الترحيب
+    # وضع الصورة الشخصية فوق خلفية الترحيب
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
     # ----------------------------------------------------
-    # 3. إعداد وكتابة اسم العضو في الشريط الأزرق السفلي
+    # 3. إعداد وكتابة اسم العضو في الشريط السفلي
     # ----------------------------------------------------
     draw = ImageDraw.Draw(img)
     text = member.name
-    font_size = 32
+    font_size = 32  # حجم خط مناسب لارتفاع الشريط السفلي
 
     # تحميل الخط
     try:
@@ -67,7 +68,7 @@ async def on_member_join(member):
         except:
             font = ImageFont.load_default()
 
-    # تصغير الخط تلقائياً إذا كان الاسم طويلاً ليتناسب مع الشريط
+    # تصغير الخط تلقائيًا إذا كان الاسم طويلاً لكي لا يخرج عن الشريط
     max_text_width = 380
     while True:
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -80,14 +81,14 @@ async def on_member_join(member):
         except:
             break
 
-    # حساب المكان المناسب ليكون النص موسطاً داخل الشريط الأزرق
+    # حساب موقع النص ليكون موسطاً تماماً داخل الشريط الأزرق السفلي
     text_x = 60 + (410 - text_width) // 2
-    text_y = 498
+    text_y = 495  # الارتفاع المناسب لمنتصف الشريط السفلي
 
-    # رسم ظل خفيف لزيادة وضوح النص
+    # رسم ظل للنص لزيادة الوضوح
     draw.text((text_x + 2, text_y + 2), text, font=font, fill=(20, 20, 40, 180))
 
-    # رسم اسم العضو بلون أبيض
+    # رسم اسم العضو باللون الأبيض
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
     # ----------------------------------------------------
