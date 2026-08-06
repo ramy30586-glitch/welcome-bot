@@ -13,147 +13,104 @@ bot = commands.Bot(
     intents=intents
 )
 
-
 # عند تشغيل البوت
 @bot.event
 async def on_ready():
-    print(f"تم تشغيل البوت: {bot.user}")
-
+    print(f"تم تشغيل البوت بنجاح: {bot.user}")
 
 # عند دخول عضو جديد
 @bot.event
 async def on_member_join(member):
 
-    # فتح الخلفية
+    # 1. فتح صورة الخلفية
     img = Image.open("welcome.png").convert("RGBA")
-    draw = ImageDraw.Draw(img)
 
-
-    # الخط
-    try:
-        font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            110
-        )
-    except:
-        font = ImageFont.load_default()
-
-
-    # اسم العضو فقط
-    text = member.name
-
-
-    # حساب مكان الاسم
-    bbox = draw.textbbox(
-        (0, 0),
-        text,
-        font=font
-    )
-
-    text_width = bbox[2] - bbox[0]
-
-    text_x = (img.width - text_width) // 2
-    text_y = 780
-
-
-    # ظل الاسم
-    draw.text(
-        (text_x + 5, text_y + 5),
-        text,
-        font=font,
-        fill=(40, 40, 80)
-    )
-
-
-    # الاسم
-    draw.text(
-        (text_x, text_y),
-        text,
-        font=font,
-        fill=(255, 255, 255)
-    )
-
-
-    # تحميل صورة العضو
+    # ----------------------------------------------------
+    # 2. تجهيز وتأطير صورة العضو (Avatar)
+    # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
+    avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    avatar_img = Image.open(
-        io.BytesIO(avatar_bytes)
-    ).convert("RGBA")
+    # الحجم الدقيق للدائرة البيضاء
+    avatar_size = 350
+    avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
-
-    # حجم الصورة
-    avatar_size = 430
-
-    avatar_img = avatar_img.resize(
-        (avatar_size, avatar_size)
-    )
-
-
-    # إنشاء قناع دائري
-    mask = Image.new(
-        "L",
-        (avatar_size, avatar_size),
-        0
-    )
-
+    # إنشاء قناع دائري (Mask)
+    mask = Image.new("L", (avatar_size, avatar_size), 0)
     mask_draw = ImageDraw.Draw(mask)
-
-    mask_draw.ellipse(
-        (0, 0, avatar_size, avatar_size),
-        fill=255
-    )
-
+    mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
     # جعل الصورة دائرية
-    avatar_circle = Image.new(
-        "RGBA",
-        (avatar_size, avatar_size),
-        (0,0,0,0)
-    )
+    avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
+    avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    avatar_circle.paste(
-        avatar_img,
-        (0,0),
-        mask
-    )
+    # المكان المناسب بالبيكسل داخل الدائرة البيضاء
+    avatar_x = 94
+    avatar_y = 51
 
+    # وضع الصورة على خلفية الترحيب
+    img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
-    # مكان الصورة داخل الدائرة
-    avatar_x = 180
-    avatar_y = 80
+    # ----------------------------------------------------
+    # 3. إعداد وكتابة اسم العضو في الشريط الأزرق السفلي
+    # ----------------------------------------------------
+    draw = ImageDraw.Draw(img)
+    text = member.name
+    font_size = 32
 
+    # تحميل الخط
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+    except:
+        try:
+            font = ImageFont.truetype("DejaVuSans.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
 
-    img.paste(
-        avatar_circle,
-        (avatar_x, avatar_y),
-        avatar_circle
-    )
+    # تصغير الخط تلقائياً إذا كان الاسم طويلاً ليتناسب مع الشريط
+    max_text_width = 380
+    while True:
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        if text_width <= max_text_width or font_size <= 14:
+            break
+        font_size -= 2
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+        except:
+            break
 
+    # حساب المكان المناسب ليكون النص موسطاً داخل الشريط الأزرق
+    text_x = 60 + (410 - text_width) // 2
+    text_y = 498
 
-    # حفظ الصورة
-    img.save("welcome_final.png")
+    # رسم ظل خفيف لزيادة وضوح النص
+    draw.text((text_x + 2, text_y + 2), text, font=font, fill=(20, 20, 40, 180))
 
+    # رسم اسم العضو بلون أبيض
+    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
-    # قناة الترحيب
-    channel = bot.get_channel(
-        int(os.getenv("CHANNEL_ID"))
-    )
+    # ----------------------------------------------------
+    # 4. إرسال الصورة في القناة
+    # ----------------------------------------------------
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
 
-
-    await channel.send(
-        content=(
-            f"🎉 **مرحبًا بك {member.mention}!**\n\n"
-            f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
-            f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
-            f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
-            f"نتمنى لك وقتًا ممتعًا! 💙"
-        ),
-        file=discord.File(
-            "welcome_final.png"
-        )
-    )
-
+    channel_id = os.getenv("CHANNEL_ID")
+    if channel_id:
+        channel = bot.get_channel(int(channel_id))
+        if channel:
+            await channel.send(
+                content=(
+                    f"🎉 **مرحبًا بك {member.mention}!**\n\n"
+                    f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
+                    f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
+                    f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
+                    f"نتمنى لك وقتًا ممتعًا! 💙"
+                ),
+                file=discord.File(buffer, filename="welcome_card.png")
+            )
 
 # تشغيل البوت
 bot.run(os.getenv("TOKEN"))
