@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 import os
+import io
 
 # إعداد الصلاحيات
 intents = discord.Intents.default()
@@ -23,31 +24,48 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 
-    # فتح صورة الخلفية
+    # فتح الخلفية
     img = Image.open("welcome.png").convert("RGBA")
     draw = ImageDraw.Draw(img)
 
 
     # الخط
     try:
-        font = ImageFont.truetype("DejaVuSans.ttf", 90)
+        font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            110
+        )
     except:
         font = ImageFont.load_default()
 
 
-    # اسم العضو
-    text = f"Welcome {member.name}"
+    # اسم العضو فقط
+    text = member.name
 
 
-    # حساب مكان النص
-    bbox = draw.textbbox((0, 0), text, font=font)
+    # حساب مكان الاسم
+    bbox = draw.textbbox(
+        (0, 0),
+        text,
+        font=font
+    )
+
     text_width = bbox[2] - bbox[0]
 
     text_x = (img.width - text_width) // 2
-    text_y = 720
+    text_y = 780
 
 
-    # كتابة الاسم
+    # ظل الاسم
+    draw.text(
+        (text_x + 5, text_y + 5),
+        text,
+        font=font,
+        fill=(40, 40, 80)
+    )
+
+
+    # الاسم
     draw.text(
         (text_x, text_y),
         text,
@@ -57,17 +75,16 @@ async def on_member_join(member):
 
 
     # تحميل صورة العضو
-    avatar = member.display_avatar
-    avatar_bytes = await avatar.read()
+    avatar_bytes = await member.display_avatar.read()
 
-    with open("avatar.png", "wb") as f:
-        f.write(avatar_bytes)
+    avatar_img = Image.open(
+        io.BytesIO(avatar_bytes)
+    ).convert("RGBA")
 
 
     # حجم الصورة
-    avatar_size = 300
+    avatar_size = 430
 
-    avatar_img = Image.open("avatar.png").convert("RGBA")
     avatar_img = avatar_img.resize(
         (avatar_size, avatar_size)
     )
@@ -91,19 +108,20 @@ async def on_member_join(member):
     # جعل الصورة دائرية
     avatar_circle = Image.new(
         "RGBA",
-        (avatar_size, avatar_size)
+        (avatar_size, avatar_size),
+        (0,0,0,0)
     )
 
     avatar_circle.paste(
         avatar_img,
-        (0, 0),
+        (0,0),
         mask
     )
 
 
-    # وضع الصورة داخل الدائرة في التصميم
-    avatar_x = 170
-    avatar_y = 120
+    # مكان الصورة داخل الدائرة
+    avatar_x = 180
+    avatar_y = 80
 
 
     img.paste(
@@ -113,11 +131,11 @@ async def on_member_join(member):
     )
 
 
-    # حفظ الصورة النهائية
+    # حفظ الصورة
     img.save("welcome_final.png")
 
 
-    # إرسال الترحيب
+    # قناة الترحيب
     channel = bot.get_channel(
         int(os.getenv("CHANNEL_ID"))
     )
@@ -131,7 +149,9 @@ async def on_member_join(member):
             f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
             f"نتمنى لك وقتًا ممتعًا! 💙"
         ),
-        file=discord.File("welcome_final.png")
+        file=discord.File(
+            "welcome_final.png"
+        )
     )
 
 
