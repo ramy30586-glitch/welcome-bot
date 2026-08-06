@@ -12,6 +12,7 @@ bot = commands.Bot(
     intents=intents
 )
 
+
 # عند تشغيل البوت
 @bot.event
 async def on_ready():
@@ -43,7 +44,7 @@ async def on_member_join(member):
     text_width = bbox[2] - bbox[0]
 
     text_x = (img.width - text_width) // 2
-    text_y = 640
+    text_y = 720
 
 
     # كتابة الاسم
@@ -63,15 +64,24 @@ async def on_member_join(member):
         f.write(avatar_bytes)
 
 
-    avatar_size = 340
+    # حجم الصورة
+    avatar_size = 300
 
     avatar_img = Image.open("avatar.png").convert("RGBA")
-    avatar_img = avatar_img.resize((avatar_size, avatar_size))
+    avatar_img = avatar_img.resize(
+        (avatar_size, avatar_size)
+    )
 
 
     # إنشاء قناع دائري
-    mask = Image.new("L", (avatar_size, avatar_size), 0)
+    mask = Image.new(
+        "L",
+        (avatar_size, avatar_size),
+        0
+    )
+
     mask_draw = ImageDraw.Draw(mask)
+
     mask_draw.ellipse(
         (0, 0, avatar_size, avatar_size),
         fill=255
@@ -91,9 +101,9 @@ async def on_member_join(member):
     )
 
 
-    # وضع الصورة في المنتصف
-    avatar_x = (img.width - avatar_size) // 2
-    avatar_y = 220
+    # وضع الصورة داخل الدائرة في التصميم
+    avatar_x = 170
+    avatar_y = 120
 
 
     img.paste(
@@ -112,8 +122,6 @@ async def on_member_join(member):
         int(os.getenv("CHANNEL_ID"))
     )
 
-    rules = f"<#{os.getenv('RULES_CHANNEL_ID')}>"
-    guide = f"<#{os.getenv('GUIDE_CHANNEL_ID')}>"
 
     await channel.send(
         content=(
