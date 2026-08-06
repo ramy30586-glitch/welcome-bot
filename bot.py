@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import os
 import io
 
-# إعداد الصلاحيات (Intents)
+# إعداد الصلاحيات
 intents = discord.Intents.default()
 intents.members = True
 
@@ -13,7 +13,7 @@ bot = commands.Bot(
     intents=intents
 )
 
-# عند تشغيل البوت بنجاح
+# عند تشغيل البوت
 @bot.event
 async def on_ready():
     print(f"تم تشغيل البوت بنجاح: {bot.user}")
@@ -22,22 +22,25 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 
-    # 1. فتح صورة الخلفية الخاصة بك
-    # تأكد من أن ملف 'welcome.png' موجود في نفس مجلد ملف الكود
+    # 1. فتح صورة الخلفية (1920x1080)
     try:
         img = Image.open("welcome.png").convert("RGBA")
     except FileNotFoundError:
-        print("خطأ: لم يتم العثور على ملف 'welcome.png'. تأكد من وجوده في نفس المجلد.")
+        print("خطأ: لم يتم العثور على ملف 'welcome.png'")
         return
 
     # ----------------------------------------------------
-    # 2. إعداد وتأطير صورة العضو (Avatar)
+    # 2. إعداد وصنع صورة العضو الدائرية (Avatar)
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # القطر الدقيق للدائرة البيضاء في التصميم
-    avatar_size = 280
+    # المقاسات والإحداثيات الدقيقة لأبعاد 1920x1080
+    avatar_size = 640
+    avatar_x = 210
+    avatar_y = 115
+
+    # تغيير حجم الصورة الشخصية
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
     # إنشاء قناع دائري (Mask)
@@ -45,68 +48,62 @@ async def on_member_join(member):
     mask_draw = ImageDraw.Draw(mask)
     mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
-    # جعل الصورة الشخصية دائرية
+    # قص الصورة بشكل دائري
     avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
     avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    # الإحداثيات المصححة لمركز الدائرة البيضاء في الخلفية
-    # المركز الفعلي للدائرة في التصميم هو (290, 210) تقريبًا.
-    avatar_x = 150
-    avatar_y = 70
-
-    # وضع الصورة الشخصية على خلفية الترحيب في المكان الصحيح
+    # لصق الصورة الشخصية على الخلفية
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
     # ----------------------------------------------------
-    # 3. إعداد وكتابة اسم العضو في الشريط الأزرق السفلي
+    # 3. إعداد وكتابة اسم العضو في الشريط السفلي
     # ----------------------------------------------------
     draw = ImageDraw.Draw(img)
     text = member.name
-    font_size = 32 # حجم خط مناسب لارتفاع الشريط
+    font_size = 65  # حجم خط متناسق مع جودة 1080p
 
     # تحميل الخط
-    # تأكد من وجود ملف خط مناسب مثل 'DejaVuSans-Bold.ttf' أو غيّر الاسم لخط موجود في نظامك
     try:
         font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
     except:
         try:
-            font = ImageFont.truetype("DejaVuSans.ttf", font_size)
+            font = ImageFont.truetype("arial.ttf", font_size)
         except:
-            print("تحذير: لم يتم العثور على خط، سيتم استخدام الخط الافتراضي.")
             font = ImageFont.load_default()
 
-    # تصغير حجم الخط تلقائيًا إذا كان اسم العضو طويلاً
-    max_text_width = 380
-    while True:
-        # draw.textbbox((0, 0), text, font=font) يعيد (x0, y0, x1, y1)
+    # تصغير الخط تلقائياً إذا كان الاسم طويلاً
+    max_text_width = 730
+    while font_size > 20:
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
-        if text_width <= max_text_width or font_size <= 14:
+        if text_width <= max_text_width:
             break
-        font_size -= 2
+        font_size -= 3
         try:
             font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
         except:
             break
 
-    # حساب موقع النص ليكون موسطاً أفقيًا وعموديًا داخل الشريط الأزرق السفلي
-    text_x = 60 + (410 - text_width) // 2
-    text_y = 495 # الارتفاع المناسب لمنتصف الشريط
+    # حساب موقع النص لتوسيطه داخل الشريط الأزرق السفلي
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    
+    text_x = 160 + (730 - text_width) // 2
+    text_y = 940  # الارتفاع المظبوط لمنتصف الشريط السفلي
 
-    # رسم ظل خفيف لزيادة وضوح النص
-    draw.text((text_x + 2, text_y + 2), text, font=font, fill=(20, 20, 40, 180))
+    # رسم ظل غامق خلف النص لبروزه
+    draw.text((text_x + 3, text_y + 3), text, font=font, fill=(15, 15, 30, 220))
 
-    # رسم اسم العضو بلون أبيض
+    # رسم النص باللون الأبيض
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
     # ----------------------------------------------------
-    # 4. إرسال الصورة في قناة الترحيب
+    # 4. إرسال الصورة في القناة
     # ----------------------------------------------------
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
 
-    # احصل على ID قناة الترحيب من متغيرات البيئة
     channel_id = os.getenv("CHANNEL_ID")
     if channel_id:
         channel = bot.get_channel(int(channel_id))
@@ -121,15 +118,6 @@ async def on_member_join(member):
                 ),
                 file=discord.File(buffer, filename="welcome_card.png")
             )
-        else:
-            print(f"خطأ: لم يتم العثور على قناة الترحيب ذات الـ ID: {channel_id}")
-    else:
-        print("خطأ: لم يتم تعيين متغير البيئة 'CHANNEL_ID'.")
 
 # تشغيل البوت
-# تأكد من تعيين متغير البيئة 'TOKEN' برمز توكن البوت الخاص بك
-token = os.getenv("TOKEN")
-if token:
-    bot.run(token)
-else:
-    print("خطأ: لم يتم تعيين متغير البيئة 'TOKEN'.")
+bot.run(os.getenv("TOKEN"))
