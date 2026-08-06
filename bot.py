@@ -16,7 +16,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 
-    # 1. فتح صورة الخلفية
+    # 1. فتح صورة الخلفية (1920x1080)
     try:
         img = Image.open("welcome.png").convert("RGBA")
     except FileNotFoundError:
@@ -26,15 +26,14 @@ async def on_member_join(member):
     draw = ImageDraw.Draw(img)
 
     # ----------------------------------------------------
-    # 2. صورة العضو (Avatar) - التعديلات الجديدة
+    # 2. صورة العضو (Avatar) - الإحداثيات الجديدة (247, 119)
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # تكبير الحجم بنسبة 6% وتغيير الإحداثيات بمقدار (+30, -14)
-    avatar_size = 572  # 540 + 6%
-    avatar_x = 289     # 259 + 30
-    avatar_y = 141     # 155 - 14
+    avatar_size = 572
+    avatar_x = 247     # (289 - 42) تحريك لليسار
+    avatar_y = 119     # (141 - 22) تحريك للأعلى
 
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
