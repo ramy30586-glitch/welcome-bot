@@ -11,30 +11,29 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"تم تشغيل البوت بنجاح: {bot.user}")
+    print(f"🚀 تم تشغيل البوت مع التعديل الجديد: {bot.user}")
 
 @bot.event
 async def on_member_join(member):
 
-    # 1. فتح صورة الخلفية (1920x1080)
+    # 1. فتح صورة الخلفية
     try:
         img = Image.open("welcome.png").convert("RGBA")
     except FileNotFoundError:
-        print("خطأ: لم يتم العثور على ملف 'welcome.png'")
+        print("❌ خطأ: لم يتم العثور على ملف 'welcome.png'")
         return
 
     draw = ImageDraw.Draw(img)
 
     # ----------------------------------------------------
-    # 2. إعداد وصنع صورة العضو الدائرية (Avatar)
+    # 2. صورة العضو (Avatar) - الإحداثيات المعدلة
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # المقاسات الدقيقة لتملأ الإطار الداخلي بالتمام
-    avatar_size = 580
-    avatar_x = 210
-    avatar_y = 105
+    avatar_size = 540
+    avatar_x = 259  # إضافة 34 بكسل لليمين
+    avatar_y = 155  # إضافة 10 بكسل للأسفل
 
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
@@ -45,14 +44,13 @@ async def on_member_join(member):
     avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
     avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    # لصق الصورة في منتصف الإطار الدائري
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
     # ----------------------------------------------------
-    # 3. إعداد اسم العضو في الشريط السفلي الداكن
+    # 3. اسم العضو
     # ----------------------------------------------------
     text = member.name
-    font_size = 50
+    font_size = 60
 
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
@@ -60,32 +58,15 @@ async def on_member_join(member):
         try:
             font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
         except:
-            font = ImageFont.load_default()
+            font = ImageFont.load_default(size=font_size)
 
-    # تصغير الخط تلقائياً إذا كان الاسم طويلاً
-    max_text_width = 750
-    while font_size > 18:
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[2] - bbox[0]
-        if text_width <= max_text_width:
-            break
-        font_size -= 2
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except:
-            break
-
-    # حساب التوسيط الأفقي والعمودي داخل الشريط السفلي
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     
-    text_x = 100 + (750 - text_width) // 2
-    text_y = 965  # موقع Y المضبوط لسنتر الشريط الداكن تماماً
+    text_x = 90 + (700 - text_width) // 2
+    text_y = 945
 
-    # رسم ظل غامق
-    draw.text((text_x + 3, text_y + 3), text, font=font, fill=(10, 10, 25, 230))
-
-    # رسم الاسم باللون الأبيض الناصع
+    draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
     # ----------------------------------------------------
