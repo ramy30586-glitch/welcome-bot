@@ -16,6 +16,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 
+    # 1. فتح صورة الخلفية الأصلية (welcome.png)
     try:
         img = Image.open("welcome.png").convert("RGBA")
     except FileNotFoundError:
@@ -24,15 +25,18 @@ async def on_member_join(member):
 
     draw = ImageDraw.Draw(img)
 
-    # 1. إعداد صورة العضو الشخصية
+    # ----------------------------------------------------
+    # 2. إعداد وقص صورة العضو (Avatar)
+    # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # المقاسات المضبوطة للانزلاق داخل الإطار الأبيض تماماً
-    avatar_size = 500
-    avatar_x = 350  # تحريك لليمين
-    avatar_y = 190  # تحريك للأسفل
+    # القيم المقاسة بالبكسل لتتوسط الدائرة تماماً
+    avatar_size = 640
+    avatar_x = 225
+    avatar_y = 110
 
+    # تغيير الحجم وقص الصورة بشكل دائري
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
     mask = Image.new("L", (avatar_size, avatar_size), 0)
@@ -42,12 +46,14 @@ async def on_member_join(member):
     avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
     avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    # لصق الصورة
+    # لصق الصورة فوق خلفية Welcome
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
-    # 2. إعداد اسم العضو في الشريط السفلي
+    # ----------------------------------------------------
+    # 3. إعداد اسم العضو وتوسيته داخل الشريط السفلي
+    # ----------------------------------------------------
     text = member.name
-    font_size = 50
+    font_size = 55
 
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
@@ -57,7 +63,7 @@ async def on_member_join(member):
         except:
             font = ImageFont.load_default()
 
-    # تصغير النص تلقائياً إذا كان طويلاً
+    # تصغير الخط تلقائياً إذا كان اسم العضو طويلاً كي لا يخرج عن حدود الشريط
     max_text_width = 700
     while font_size > 18:
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -70,18 +76,23 @@ async def on_member_join(member):
         except:
             break
 
-    # حساب التوسيط داخل الشريط السفلي
+    # حساب موقع توسيط النص أفقياً وعمودياً
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     
-    text_x = 100 + (700 - text_width) // 2
-    text_y = 940  # لإنزال الاسم داخل الشريط السفلي
+    # نطاق الشريط الأفقي: يبدأ تقريباً من X = 90 إلى X = 790
+    text_x = 90 + (700 - text_width) // 2
+    text_y = 950  # إنزال النص داخل الشريط السفلي الفارغ
 
-    # رسم الظل والنص
+    # رسم ظل غامق خلف النص لإبرازه
     draw.text((text_x + 3, text_y + 3), text, font=font, fill=(10, 10, 25, 230))
+
+    # رسم الاسم باللون الأبيض الناصع
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
-    # 3. حفظ وإرسال الصورة
+    # ----------------------------------------------------
+    # 4. إرسال الصورة في القناة
+    # ----------------------------------------------------
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
