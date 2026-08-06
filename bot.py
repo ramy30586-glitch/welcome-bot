@@ -11,7 +11,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"🚀 تم تشغيل البوت مع التعديل الجديد: {bot.user}")
+    print(f"🚀 تم تشغيل البوت بالأبعاد الجديدة: {bot.user}")
 
 @bot.event
 async def on_member_join(member):
@@ -26,14 +26,15 @@ async def on_member_join(member):
     draw = ImageDraw.Draw(img)
 
     # ----------------------------------------------------
-    # 2. صورة العضو (Avatar) - الإحداثيات المعدلة
+    # 2. صورة العضو (Avatar) - التعديلات الجديدة
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    avatar_size = 540
-    avatar_x = 259  # إضافة 34 بكسل لليمين
-    avatar_y = 155  # إضافة 10 بكسل للأسفل
+    # تكبير الحجم بنسبة 6% وتغيير الإحداثيات بمقدار (+30, -14)
+    avatar_size = 572  # 540 + 6%
+    avatar_x = 289     # 259 + 30
+    avatar_y = 141     # 155 - 14
 
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
