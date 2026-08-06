@@ -16,7 +16,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 
-    # 1. فتح صورة الخلفية الأصلية (welcome.png)
+    # 1. فتح صورة الخلفية (1920x1080)
     try:
         img = Image.open("welcome.png").convert("RGBA")
     except FileNotFoundError:
@@ -26,17 +26,16 @@ async def on_member_join(member):
     draw = ImageDraw.Draw(img)
 
     # ----------------------------------------------------
-    # 2. إعداد وقص صورة العضو (Avatar)
+    # 2. إعداد وصنع صورة العضو الدائرية (Avatar)
     # ----------------------------------------------------
     avatar_bytes = await member.display_avatar.read()
     avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
 
-    # القيم المقاسة بالبكسل لتتوسط الدائرة تماماً
-    avatar_size = 640
-    avatar_x = 225
-    avatar_y = 110
+    # المقاسات الدقيقة لتملأ الإطار الداخلي بالتمام
+    avatar_size = 580
+    avatar_x = 210
+    avatar_y = 105
 
-    # تغيير الحجم وقص الصورة بشكل دائري
     avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
 
     mask = Image.new("L", (avatar_size, avatar_size), 0)
@@ -46,14 +45,14 @@ async def on_member_join(member):
     avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
     avatar_circle.paste(avatar_img, (0, 0), mask)
 
-    # لصق الصورة فوق خلفية Welcome
+    # لصق الصورة في منتصف الإطار الدائري
     img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
     # ----------------------------------------------------
-    # 3. إعداد اسم العضو وتوسيته داخل الشريط السفلي
+    # 3. إعداد اسم العضو في الشريط السفلي الداكن
     # ----------------------------------------------------
     text = member.name
-    font_size = 55
+    font_size = 50
 
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
@@ -63,8 +62,8 @@ async def on_member_join(member):
         except:
             font = ImageFont.load_default()
 
-    # تصغير الخط تلقائياً إذا كان اسم العضو طويلاً كي لا يخرج عن حدود الشريط
-    max_text_width = 700
+    # تصغير الخط تلقائياً إذا كان الاسم طويلاً
+    max_text_width = 750
     while font_size > 18:
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
@@ -76,22 +75,21 @@ async def on_member_join(member):
         except:
             break
 
-    # حساب موقع توسيط النص أفقياً وعمودياً
+    # حساب التوسيط الأفقي والعمودي داخل الشريط السفلي
     bbox = draw.textbbox((0, 0), text, font=font)
     text_width = bbox[2] - bbox[0]
     
-    # نطاق الشريط الأفقي: يبدأ تقريباً من X = 90 إلى X = 790
-    text_x = 90 + (700 - text_width) // 2
-    text_y = 950  # إنزال النص داخل الشريط السفلي الفارغ
+    text_x = 100 + (750 - text_width) // 2
+    text_y = 965  # موقع Y المضبوط لسنتر الشريط الداكن تماماً
 
-    # رسم ظل غامق خلف النص لإبرازه
+    # رسم ظل غامق
     draw.text((text_x + 3, text_y + 3), text, font=font, fill=(10, 10, 25, 230))
 
     # رسم الاسم باللون الأبيض الناصع
     draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
     # ----------------------------------------------------
-    # 4. إرسال الصورة في القناة
+    # 4. إرسال الصورة
     # ----------------------------------------------------
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
