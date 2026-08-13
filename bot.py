@@ -61,31 +61,30 @@ async def on_member_join(member):
         avatar_circle.paste(avatar_img, (0, 0), mask)
         img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
 
-        # اسم العضو (بدون تصفية معقدة)
-        text = member.name
-        font_size = 60
+        # 3. اسم العضو - الإحداثيات المعدلة (+90px لليمين, +10px للأسفل)
+    # ----------------------------------------------------
+    text = member.name
+    font_size = 60
 
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except:
-            try:
-                font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
-            except:
-                font = ImageFont.load_default()
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except:
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+        except:
+            font = ImageFont.load_default(size=font_size)
 
-        # حساب الموقع ورسم النص
-        try:
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-        except:
-            text_width = 300 # قيمة افتراضية في حال فشل حساب الأبعاد
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    
+    # تحريك موقع البدء الأساسي 90 بكسل لليمين
+    base_x = 90 + 90  # 180
+    text_x = base_x + (700 - text_width) // 2
+    text_y = 955     # 945 + 10 (إنزال 10 بكسل)
 
-        base_x = 180
-        text_x = base_x + (700 - text_width) // 2
-        text_y = 955
-
-        draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
-        draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
+    # رسم الظل والنص
+    draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
+    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
         # حفظ وإرسال
         buffer = io.BytesIO()
