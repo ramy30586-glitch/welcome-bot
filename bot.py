@@ -3,6 +3,7 @@ from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 import os
 import io
+import re
 
 intents = discord.Intents.default()
 intents.members = True
@@ -15,83 +16,98 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-
-    # 1. فتح صورة الخلفية (1920x1080)
-    try:
-        img = Image.open("welcome.png").convert("RGBA")
-    except FileNotFoundError:
-        print("❌ خطأ: لم يتم العثور على ملف 'welcome.png'")
+    channel_id = os.getenv("CHANNEL_ID")
+    if not channel_id:
+        return
+    
+    channel = bot.get_channel(int(channel_id))
+    if not channel:
         return
 
-    draw = ImageDraw.Draw(img)
-
-    # ----------------------------------------------------
-    # 2. صورة العضو (Avatar) - المكان المضبوط تمامًا
-    # ----------------------------------------------------
-    avatar_bytes = await member.display_avatar.read()
-    avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
-
-    avatar_size = 572
-    avatar_x = 247
-    avatar_y = 119
-
-    avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
-
-    mask = Image.new("L", (avatar_size, avatar_size), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
-
-    avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
-    avatar_circle.paste(avatar_img, (0, 0), mask)
-
-    img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
-
-    # ----------------------------------------------------
-    # 3. اسم العضو - الإحداثيات المعدلة (+90px لليمين, +10px للأسفل)
-    # ----------------------------------------------------
-    text = member.name
-    font_size = 60
+    # نص الترحيب الأساسي
+    welcome_message = (
+        f"🎉 **مرحبًا بك {member.mention}!**\n\n"
+        f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
+        f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
+        f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
+        f"نتمنى لك وقتًا ممتعًا! 💙"
+    )
 
     try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except:
+        # 1. فتح صورة الخلفية (1920x1080)
+        if not os.path.exists("welcome.png"):
+            print("❌ خطأ: لم يتم العثور على ملف 'welcome.png'")
+            await channel.send(content=welcome_message)
+            return
+
+        img = Image.open("welcome.png").convert("RGBA")
+        draw = ImageDraw.Draw(img)
+
+        # ----------------------------------------------------
+        # 2. صورة العضو (Avatar)
+        # ----------------------------------------------------
+        avatar_bytes = await member.display_avatar.read()
+        avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
+
+        avatar_size = 572
+        avatar_x = 247
+        avatar_y = 119
+
+        avatar_img = avatar_img.resize((avatar_size, avatar_size), Image.Resampling.LANCZOS)
+
+        mask = Image.new("L", (avatar_size, avatar_size), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.ellipse((0, 0, avatar_size, avatar_size), fill=255)
+
+        avatar_circle = Image.new("RGBA", (avatar_size, avatar_size), (0, 0, 0, 0))
+        avatar_circle.paste(avatar_img, (0, 0), mask)
+
+        img.paste(avatar_circle, (avatar_x, avatar_y), avatar_circle)
+
+        # ----------------------------------------------------
+        # 3. اسم العضو (تنظيف الرموز لضمان سلامة الخط)
+        # ----------------------------------------------------
+        # تنظيف الاسم من النجوم والرموز الغريبة التي تكسر Pillow
+        clean_text = re.sub(r'[^\w\s\.-]', '', member.name).strip()
+        
+        # إذا أصبح الاسم فارغًا بعد التنظيف، نستخدم الاسم المعروض أو اسم افتراضي
+        text = clean_text if clean_text else member.display_name
+
+        font_size = 60
         try:
-            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+            font = ImageFont.truetype("arial.ttf", font_size)
         except:
-            font = ImageFont.load_default(size=font_size)
+            try:
+                font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+            except:
+                font = ImageFont.load_default(size=font_size)
 
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_width = bbox[2] - bbox[0]
-    
-    # تحريك موقع البدء الأساسي 90 بكسل لليمين
-    base_x = 90 + 90  # 180
-    text_x = base_x + (700 - text_width) // 2
-    text_y = 955     # 945 + 10 (إنزال 10 بكسل)
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        
+        base_x = 180
+        text_x = base_x + (700 - text_width) // 2
+        text_y = 955
 
-    # رسم الظل والنص
-    draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
-    draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
+        # رسم الظل والنص
+        draw.text((text_x + 4, text_y + 4), text, font=font, fill=(10, 10, 25, 240))
+        draw.text((text_x, text_y), text, font=font, fill=(255, 255, 255, 255))
 
-    # ----------------------------------------------------
-    # 4. إرسال الصورة
-    # ----------------------------------------------------
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
+        # ----------------------------------------------------
+        # 4. إرسال الصورة والرسالة
+        # ----------------------------------------------------
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        buffer.seek(0)
 
-    channel_id = os.getenv("CHANNEL_ID")
-    if channel_id:
-        channel = bot.get_channel(int(channel_id))
-        if channel:
-            await channel.send(
-                content=(
-                    f"🎉 **مرحبًا بك {member.mention}!**\n\n"
-                    f"👥 أنت العضو رقم **{member.guild.member_count}**.\n\n"
-                    f"📜 يرجى قراءة القوانين: <#1500088241481842740>\n"
-                    f"🗺️ اطلع على خريطة السيرفر: <#1534225181210574990>\n\n"
-                    f"نتمنى لك وقتًا ممتعًا! 💙"
-                ),
-                file=discord.File(buffer, filename="welcome_card.png")
-            )
+        await channel.send(
+            content=welcome_message,
+            file=discord.File(buffer, filename="welcome_card.png")
+        )
+
+    except Exception as e:
+        print(f"⚠️ حدث خطأ أثناء تصميم صورة الترحيب: {e}")
+        # إرسال الرسالة بدون صورة في حال حدوث أي خلل في المعالجة
+        await channel.send(content=welcome_message)
 
 bot.run(os.getenv("TOKEN"))
